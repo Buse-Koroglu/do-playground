@@ -7,21 +7,86 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id       Int      @id @default(autoincrement())
-  email    String   @unique
-  password String
-  animals  Animal[]
+enum Role {
+  USER
+  ADMIN
 }
 
-model Animal {
-  id          Int      @id @default(autoincrement())
-  name        String
-  species     String
-  age         Int
-  description String
-  city        String
-  imageUrl    String?
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
+enum AdoptionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id               Int               @id @default(autoincrement())
+  email            String            @unique
+  password         String
+  role             Role              @default(USER)
+  deletedAt        DateTime?
+  pets             Pet[]
+  refreshTokens    RefreshToken[]
+  auditLogs        AuditLog[]
+  adoptionRequests AdoptionRequest[] @relation("AdoptionRequestRequester")
+  reviewedRequests AdoptionRequest[] @relation("AdoptionRequestReviewer")
+}
+
+model Pet {
+  id               Int               @id @default(autoincrement())
+  name             String
+  species          String
+  age              Int
+  description      String
+  city             String
+  imageUrl         String?
+  deletedAt        DateTime?
+  userId           Int
+  user             User              @relation(fields: [userId], references: [id])
+  adoptionRequests AdoptionRequest[]
+
+  @@map("Animal")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
+}
+
+model AdoptionRequest {
+  id          Int                   @id @default(autoincrement())
+  petId       Int
+  requesterId Int
+  status      AdoptionRequestStatus @default(PENDING)
+  message     String?
+  reviewedById Int?
+  reviewedAt  DateTime?
+  createdAt   DateTime              @default(now())
+  pet         Pet                   @relation(fields: [petId], references: [id])
+  requester   User                  @relation("AdoptionRequestRequester", fields: [requesterId], references: [id])
+  reviewedBy  User?                 @relation("AdoptionRequestReviewer", fields: [reviewedById], references: [id])
+
+  @@index([petId])
+  @@index([requesterId])
+  @@index([status])
 }

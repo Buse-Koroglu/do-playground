@@ -39,7 +39,7 @@ pet-adopt/
 - Persistent volume gerekir (örn: `postgres_data:/var/lib/postgresql/data`)
 
 ### Backend
-- Port: `5000`
+- Host Port: `5555`
 - Environment variables:
   - `DATABASE_URL=postgresql://<user>:<pass>@<db_service_name>:5432/<db_name>`
   - `JWT_SECRET=<herhangi bir string>`
