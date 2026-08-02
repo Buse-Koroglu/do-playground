@@ -190,6 +190,26 @@ const requestRowStyle = {
   flexWrap: 'wrap',
 };
 
+const modalOverlayStyle = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(17, 24, 39, 0.55)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 16,
+  zIndex: 50,
+};
+
+const modalCardStyle = {
+  ...card,
+  width: '100%',
+  maxWidth: 440,
+  padding: '26px 24px',
+  display: 'grid',
+  gap: 14,
+};
+
 const footerStyle = {
   marginTop: 36,
   padding: '32px 0 28px',
@@ -272,6 +292,14 @@ function StatusBadge({ status }) {
 
 function getFriendlyMessage(message, fallback) {
   const normalized = (message || '').toLowerCase();
+
+  if (normalized.includes('first name is required')) {
+    return 'Lütfen isminizi yaz.';
+  }
+
+  if (normalized.includes('last name is required')) {
+    return 'Lütfen soyisminizi yaz.';
+  }
 
   if (normalized.includes('email is required')) {
     return 'Lütfen email adresini yaz.';
@@ -364,6 +392,11 @@ function NavBar() {
           {user?.role === 'ADMIN' ? <Link to="/admin" style={navLinkStyle}>Yönetim</Link> : null}
           {!user ? <Link to="/login" style={navLinkStyle}>Giriş</Link> : null}
           {!user ? <Link to="/register" style={navLinkStyle}>Kayıt</Link> : null}
+          {user && (user.firstName || user.lastName) ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, background: 'rgba(37, 99, 235, 0.1)', color: '#1d4ed8', fontWeight: 700, fontSize: 13 }}>
+              {[user.firstName, user.lastName].filter(Boolean).join(' ')}
+            </span>
+          ) : null}
           {user ? (
             <button onClick={logout} style={{ ...buttonStyle, background: '#111827', color: '#fff' }}>
               Çıkış
@@ -459,8 +492,82 @@ function PetForm({ initialValues, onSubmit, submitLabel }) {
   );
 }
 
+function Modal({ onClose, children }) {
+  return (
+    <div style={modalOverlayStyle} onClick={onClose}>
+      <div style={modalCardStyle} onClick={(event) => event.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function AdoptionRequestModal({ pet, onClose, onSubmit }) {
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+    setSubmitting(true);
+
+    try {
+      await onSubmit({ phoneNumber: phoneNumber.trim(), message: message.trim() || undefined });
+    } catch (submitError) {
+      setError(getFriendlyMessage(submitError.response?.data?.error, 'İstek gönderilemedi. Lütfen tekrar dene.'));
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal onClose={onClose}>
+      <div>
+        <h3 style={{ margin: '0 0 6px' }}>İstek gönder</h3>
+        <p style={{ margin: 0, color: '#6b7280', fontSize: 14 }}>
+          {pet.name} için ilan sahibine ulaşabilmesi adına telefon numaranı paylaş.
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 14 }}>
+        <ErrorNotice message={error} />
+        <label style={{ display: 'grid', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>
+          Telefon numarası *
+          <input
+            style={inputStyle}
+            type="tel"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="05xx xxx xx xx"
+            required
+          />
+        </label>
+        <label style={{ display: 'grid', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151' }}>
+          Mesaj (isteğe bağlı)
+          <textarea
+            style={{ ...inputStyle, minHeight: 90 }}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="İlan sahibine iletmek istediğin bir not var mı?"
+          />
+        </label>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button type="button" onClick={onClose} style={{ ...buttonStyle, background: '#e5e7eb', color: '#111827' }}>
+            Vazgeç
+          </button>
+          <button type="submit" disabled={submitting} style={{ ...buttonStyle, background: '#f59e0b', color: '#111827', opacity: submitting ? 0.7 : 1 }}>
+            {submitting ? 'Gönderiliyor...' : 'İsteği gönder'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 function HomePage() {
   const [pets, setPets] = useState([]);
+  const [adoptTarget, setAdoptTarget] = useState(null);
+  const [adoptSuccess, setAdoptSuccess] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -468,10 +575,10 @@ function HomePage() {
     api.get('/pets').then((response) => setPets(response.data));
   }, []);
 
-  const handleAdopt = async (pet) => {
-    const message = window.prompt('İlan sahibine iletmek istediğin bir not var mı? (isteğe bağlı)') || undefined;
-    await api.post('/adoption-requests', { petId: pet.id, message });
-    window.alert('Başvurun alındı. İlan sahibi "Talepler" sayfasından görebilir.');
+  const submitAdoptionRequest = async ({ phoneNumber, message }) => {
+    await api.post('/adoption-requests', { petId: adoptTarget.id, phoneNumber, message });
+    setAdoptTarget(null);
+    setAdoptSuccess('Başvurun alındı. İlan sahibi "Talepler" sayfasından görebilir.');
   };
 
   const handleDelete = async (pet) => {
@@ -565,12 +672,13 @@ function HomePage() {
               {user ? <Link to="/pets/new" style={{ ...ctaLinkStyle, background: '#2563eb', color: '#fff' }}>Yeni ilan oluştur</Link> : null}
             </div>
           </Reveal>
+          {adoptSuccess ? <div style={{ ...noticeStyle, marginBottom: 18 }}>{adoptSuccess}</div> : null}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18 }}>
             {pets.map((pet, index) => (
               <Reveal key={pet.id} delay={index * 80}>
                 <PetCard
                   pet={pet}
-                  onAdopt={user && pet.user?.id !== user.id ? handleAdopt : null}
+                  onAdopt={user && pet.user?.id !== user.id ? (target) => { setAdoptSuccess(''); setAdoptTarget(target); } : null}
                   onEdit={user && (user.role === 'ADMIN' || pet.user?.id === user.id) ? () => navigate(`/pets/${pet.id}/edit`) : null}
                   onDelete={user && (user.role === 'ADMIN' || pet.user?.id === user.id) ? handleDelete : null}
                 />
@@ -579,6 +687,13 @@ function HomePage() {
           </div>
         </div>
       </section>
+      {adoptTarget ? (
+        <AdoptionRequestModal
+          pet={adoptTarget}
+          onClose={() => setAdoptTarget(null)}
+          onSubmit={submitAdoptionRequest}
+        />
+      ) : null}
     </>
   );
 }
@@ -631,7 +746,7 @@ function LoginPage() {
 function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [error, setError] = useState('');
 
   const handleRegister = async (event) => {
@@ -657,12 +772,17 @@ function RegisterPage() {
           <RuleNotice
             title="Kayıt için dikkat etmen gerekenler"
             rules={[
+              'İsim ve soyisim boş bırakılamaz.',
               'Email geçerli bir formatta olmalı.',
               'Şifre en az 8 karakter olmalı.',
               'Bilgiler eksiksiz olmalı ki hesabın sorunsuz oluşturulsun.',
             ]}
           />
           <ErrorNotice message={error} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+            <input style={inputStyle} placeholder="İsim" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required />
+            <input style={inputStyle} placeholder="Soyisim" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} required />
+          </div>
           <input style={inputStyle} type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
           <input style={inputStyle} type="password" placeholder="Şifre" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           <button style={{ ...buttonStyle, background: '#2563eb', color: '#fff' }} type="submit">Kayıt ol</button>
@@ -783,6 +903,7 @@ function RequestsPage() {
                   <div>
                     <strong>{request.pet?.name}</strong>
                     <div style={{ color: '#6b7280', fontSize: 13 }}>Talep eden: {request.requester?.email}</div>
+                    {request.phoneNumber ? <div style={{ color: '#6b7280', fontSize: 13 }}>Telefon: {request.phoneNumber}</div> : null}
                     {request.message ? <p style={{ margin: '6px 0 0', color: '#4b5563' }}>{request.message}</p> : null}
                   </div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>

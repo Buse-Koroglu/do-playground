@@ -119,10 +119,23 @@ function requireInteger(value, fieldName) {
   return parsedValue;
 }
 
+function requirePhoneNumber(value) {
+  const phoneNumber = requireString(value, "Phone number");
+  const phonePattern = /^[0-9+()\-\s]{7,20}$/;
+
+  if (!phonePattern.test(phoneNumber)) {
+    throw new ValidationError("Phone number is invalid");
+  }
+
+  return phoneNumber;
+}
+
 function safeUser(user) {
   return {
     id: user.id,
     email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
     role: user.role,
     deletedAt: user.deletedAt,
   };
@@ -300,6 +313,8 @@ app.post(
   asyncHandler(async (req, res) => {
     const email = requireEmail(req.body.email);
     const password = requirePassword(req.body.password);
+    const firstName = requireString(req.body.firstName, "First name");
+    const lastName = requireString(req.body.lastName, "Last name");
 
     const existingUser = await prisma.user.findFirst({
       where: { email },
@@ -314,6 +329,8 @@ app.post(
       data: {
         email,
         password: hashedPassword,
+        firstName,
+        lastName,
         role: Role.USER,
       },
     });
@@ -727,7 +744,8 @@ app.post(
     const user = await getActiveUserOrThrow(userId);
     req.user = user;
     const petId = requireInteger(req.body.petId, "Pet id");
-    const message = typeof req.body.message === "string" ? req.body.message.trim() : null;
+    const phoneNumber = requirePhoneNumber(req.body.phoneNumber);
+    const message = typeof req.body.message === "string" && req.body.message.trim() ? req.body.message.trim() : null;
     const pet = await getActivePetOrThrow(petId);
 
     if (pet.userId === user.id) {
@@ -750,6 +768,7 @@ app.post(
       data: {
         petId,
         requesterId: user.id,
+        phoneNumber,
         message,
       },
     });
@@ -759,7 +778,7 @@ app.post(
       action: "ADOPTION_REQUEST_CREATED",
       entity: "AdoptionRequest",
       entityId: adoptionRequest.id,
-      metadata: { petId, message },
+      metadata: { petId, phoneNumber, message },
     });
 
     res.status(201).json(adoptionRequest);
