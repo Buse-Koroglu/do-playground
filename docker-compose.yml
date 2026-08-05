@@ -54,6 +54,7 @@ services:
     networks:
       - backend_net
       - frontend_net
+      - monitoring_net
     restart: unless-stopped
     secrets:
       - jwt_secret
@@ -85,3 +86,4 @@ secrets:
 networks:
   backend_net:
   frontend_net:
+  monitoring_net:

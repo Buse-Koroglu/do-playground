@@ -22,6 +22,7 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const rateLimit = require("express-rate-limit");
 const { PrismaClient, Role, AdoptionRequestStatus } = require("@prisma/client");
+const { register, metricsMiddleware } = require("./metrics");
 const { authenticate, authorize } = require("./auth");
 const {
   AuthenticationError,
@@ -283,9 +284,6 @@ app.use(
   "/uploads",
   express.static("uploads", {
     setHeaders: (res) => {
-      // Images are fetched from a different origin (frontend runs on a
-      // different port), so the default same-origin CORP header from
-      // helmet would silently block <img> loads in the browser.
       res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
     },
   })
@@ -306,6 +304,7 @@ const registerLimiter = rateLimit({
 });
 
 app.get("/health", (req, res) => res.json({ status: "UP" }));
+app.use(metricsMiddleware);
 
 app.post(
   ["/api/auth/register", "/api/register"],
@@ -918,6 +917,11 @@ app.patch(
         reviewedById: user.id,
         reviewedAt: new Date(),
       },
+    });
+
+    app.get("/metrics", async (req, res) => {
+      res.set("Content-Type", register.contentType);
+      res.end(await register.metrics());
     });
 
     await logAudit({
