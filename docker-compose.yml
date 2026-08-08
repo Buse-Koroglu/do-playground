@@ -89,7 +89,20 @@ services:
     secrets:
       - postgres_password
     restart: unless-stopped
-      
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    container_name: nginx-exporter
+    command:
+      - '-nginx.scrape-uri=http://frontend:8080/stub_status' # main command : nginx'in stub_status endpoint'ini kullanarak metrikleri alıyoruz
+    networks:
+      - monitoring_net
+      - frontend_net
+    depends_on:
+      - frontend
+    restart: unless-stopped  
+
+
 volumes:
   postgres_data:
 
