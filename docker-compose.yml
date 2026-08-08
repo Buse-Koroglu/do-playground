@@ -102,6 +102,38 @@ services:
       - frontend
     restart: unless-stopped  
 
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    privileged: true # os kernel metriklerine erişebilmesi için yetki vermeliyiz
+    devices:
+      - /dev/kmsg:/dev/kmsg:ro # cadvisor'ın kernel loglarına erişebilmesi için 
+    volumes:
+      - /:/rootfs:ro # cadvisor'ın host filesystem'ine erişebilmesi için
+      - /var/run:/var/run:rw # cadvisor'ın docker socket'ine erişebilmesi için
+      - /sys:/sys:ro # cadvisor'ın host sistemin metriklerini okuyabilmesi için
+      - /var/lib/docker/:/var/lib/docker:ro # cadvisor'ın docker container'larının metriklerini okuyabilmesi için
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro # cgroup v2 metriklerini okuyabilmesi için
+    networks:
+      - monitoring_net
+    restart: unless-stopped  
+
+  node-expoter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    volumes: 
+      - /proc:/host/proc:ro # host'un process bilgileri için
+      - /sys:/host/sys:ro # host'un kernel/doanım bilgileri için
+      - /:/rootfs:ro # host'un dosya sistemi bilgileri için
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - 'path.rootfs=/rootfs'
+      - "collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($|/)"
+    networks:
+      - monitoring_net
+    restart: unless-stopped  
+
 
 volumes:
   postgres_data:
