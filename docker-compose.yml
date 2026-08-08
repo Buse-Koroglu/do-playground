@@ -74,6 +74,18 @@ services:
     networks:
       - frontend_net
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT}:9090"
+    networks:
+      - monitoring_net
+    restart: unless-stopped
+    
   postgres-exporter:
     build: ./monitoring/postgres-exporter
     container_name: postgres-exporter
@@ -118,7 +130,7 @@ services:
       - monitoring_net
     restart: unless-stopped  
 
-  node-expoter:
+  node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
     volumes: 
@@ -137,6 +149,7 @@ services:
 
 volumes:
   postgres_data:
+  prometheus_data:
 
 secrets:
   jwt_secret:

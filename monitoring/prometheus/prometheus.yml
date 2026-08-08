@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s  # hedef kaynaklardan 15 snyede bir veri alıcaz.
+  evaluation_interval: 15s # hedef kaynaklardan aldığımız verileri 15 snyede bir değerlendireceğiz.
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090'] # prometheus'un kendi metriklerini alıyoruz.
+
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:5000'] # backend'in metriklerini alıyoruz.
+
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187'] # postgres-exporter'ın metriklerini alıyoruz.
+
+  - job_name: 'nginx-exporter'
+    static_configs:
+      - targets: ['nginx-exporter:9113'] # nginx-exporter'ın metriklerini alıyoruz.
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080'] # cadvisor'ın metriklerini alıyoruz.  
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100'] # node-exporter'ın metriklerini alıyoruz.    
