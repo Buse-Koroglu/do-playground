@@ -74,6 +74,22 @@ services:
     networks:
       - frontend_net
 
+  postgres-exporter:
+    build: ./monitoring/postgres-exporter
+    container_name: postgres-exporter
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_NAME: ${POSTGRES_DB}
+      DB_PASSWORD_FILE: /run/secrets/postgres_password
+    networks:
+      - monitoring_net # prometheus'un db'yi görebilmesi için monitoring_net'e ekledik
+      - backend_net # db'ye erişebilmek için backend_net'e de ekledik      
+    secrets:
+      - postgres_password
+    restart: unless-stopped
+      
 volumes:
   postgres_data:
 
