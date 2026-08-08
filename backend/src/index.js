@@ -919,11 +919,6 @@ app.patch(
       },
     });
 
-    app.get("/metrics", async (req, res) => {
-      res.set("Content-Type", register.contentType);
-      res.end(await register.metrics());
-    });
-
     await logAudit({
       userId: user.id,
       action: "ADOPTION_REQUEST_REJECTED",
@@ -935,6 +930,11 @@ app.patch(
     res.json(updatedRequest);
   })
 );
+
+    app.get("/metrics", async (req, res) => {
+      res.set("Content-Type", register.contentType);
+      res.end(await register.metrics());
+    });
 
 app.use((req, res, next) => next(new NotFoundError("Route not found")));
 

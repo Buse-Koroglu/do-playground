@@ -14,7 +14,7 @@ FROM node:18-alpine AS production
 WORKDIR /app
 RUN apk add --no-cache openssl
 RUN addgroup -S pet_group && \
-    adduser -S pet_user -G pet_group
+    adduser -S pet_user -G pet_group  # uid 100,gid 101 both in host and container
 COPY package*.json ./
 RUN npm ci --omit=dev # Install only production dependencies not also dev dependencies
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma

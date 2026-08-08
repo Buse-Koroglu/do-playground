@@ -1,0 +1,12 @@
+apiVersion: 1
+# Grafana'ya hangi dashboardların yükleneceğini ve nereden yükleneceğini belirten bir yapılandırma dosyasıdır. Bu dosya, Grafana'nın otomatik olarak dashboardları yüklemesini sağlar.
+providers:
+  - name: 'Default Dashboards'
+    orgId: 1
+    folder: ''
+    type: file # json dosyalarını yüklemek için file tipini kullanıyoruz
+    disableDeletion: false # dashboard json dosyaları silinirse Grafana'dan da silinsin mi? false olarak ayarladık, yani json dosyaları silinince Grafana'dan da silinecek
+    updateIntervalSeconds: 10 
+    options:
+      path: /etc/grafana/provisioning/dashboards # grafana container'ı içindeki dashboard json dosyalarının bulunduğu dizin
+      foldersFromFilesStructure: false

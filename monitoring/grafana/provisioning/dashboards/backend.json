@@ -1,0 +1,109 @@
+{
+  "uid": "backend-overview",
+  "title": "Backend (Node.js / Express)",
+  "tags": ["backend", "nodejs"],
+  "timezone": "browser",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Backend Up",
+      "datasource": "Prometheus",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
+      "targets": [{ "expr": "up{job=\"backend\"}", "legendFormat": "up" }],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Request Rate by Route",
+      "datasource": "Prometheus",
+      "gridPos": { "x": 6, "y": 0, "w": 18, "h": 8 },
+      "targets": [
+        { "expr": "sum(rate(http_request_duration_seconds_count[1m])) by (route)", "legendFormat": "{{route}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "p95 Latency by Route",
+      "datasource": "Prometheus",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route))", "legendFormat": "{{route}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "5xx Error Rate by Route",
+      "datasource": "Prometheus",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum(rate(http_request_duration_seconds_count{status_code=~\"5..\"}[1m])) by (route)", "legendFormat": "{{route}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Node.js Heap Usage",
+      "datasource": "Prometheus",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "nodejs_heap_size_used_bytes", "legendFormat": "used" },
+        { "expr": "nodejs_heap_size_total_bytes", "legendFormat": "total" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Event Loop Lag",
+      "datasource": "Prometheus",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "nodejs_eventloop_lag_seconds", "legendFormat": "lag" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Process CPU Usage",
+      "datasource": "Prometheus",
+      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "rate(process_cpu_seconds_total{job=\"backend\"}[1m])", "legendFormat": "cpu" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Process Resident Memory (RSS)",
+      "datasource": "Prometheus",
+      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "process_resident_memory_bytes{job=\"backend\"}", "legendFormat": "rss" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] }
+    }
+  ]
+}

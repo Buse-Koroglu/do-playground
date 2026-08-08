@@ -1,0 +1,9 @@
+apiVersion: 1
+# Bu dosya, Grafana'nın veri kaynaklarını yapılandırmak için
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090 # compose içindeki service ismi ve portu ile url
+    isDefault: true
+    editable: false # grafana arayüzünde veri kaynağı düzenlenemez, datasource sadece prometheus.yml üzerinden yönetilir
