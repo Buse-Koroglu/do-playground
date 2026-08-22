@@ -7,47 +7,85 @@ metadata:
     app: postgres
 spec:
   serviceName: postgres-service # statefulset için headless service'i kullanıyorum.
-  replicas: 1
-  selector:
+  replicas: 1 # 1 tane postgres podu çalışacak.
+  selector: # postgres podlarının tamamını bu statefulset'e dahil etmek için label'ı kullanıyorum.
     matchLabels:
       app: postgres
-  template:
+  template: # pod template'ini tanımlıyorum.
     metadata:
       labels:
-        app: postgres
-    spec:
-      containers:
-        - name: postgres
+        app: postgres # her bir pod oluşturulurken bu label'ı ekliyorum.
+    spec: # pod içerisinde olacak desired state'i tanımlıyorum.
+      containers:  
+        - name: postgres # postgres container'ını tanımlıyorum.
           image: postgres:15-alpine
           ports:
-            - containerPort: 5432
+            - containerPort: 5432 # postgres container'ının dinleyeceği portu tanımlıyorum.
               name: postgres
           env:
-            - name: POSTGRES_USER
+            - name: POSTGRES_USER # user değişkenini configmap'ten alıyorum.
               valueFrom:
                 configMapKeyRef:
                   name: postgres-adopt-config
                   key: POSTGRES_USER
-            - name: POSTGRES_DB
+            - name: POSTGRES_DB # db değişkenini configmap'ten alıyorum.
               valueFrom:
                 configMapKeyRef:
                   name: postgres-adopt-config
                   key: POSTGRES_DB
-            - name: POSTGRES_PASSWORD_FILE
-              value : /run/secrets/postgres_password
-          volumeMounts:
-            - name: postgres-data
-              mountPath: /var/lib/postgresql/data
-              subPath: pg-data
+            - name: POSTGRES_PASSWORD_FILE # password değişkenini secret'tan alıyorum.
+              value : /run/secrets/postgres_password # secret mount path'i ile aynı olmalı.
+          volumeMounts: # postgres container'ının volume mountlarını tanımlıyorum.
+            - name: postgres-data 
+              mountPath: /var/lib/postgresql/data # postgres container'ının data klasörünü persistent volume claim ile mount ediyorum.
             - name: postgres-secrets
-              mountPath: /run/secrets
+              mountPath: /run/secrets # secret mount path'i ile aynı olmalı.
               readOnly: true
           readinessProbe:
             exec:
               command:
                 - pg_isready
                 - -U
-                - petadmin
-            initialDelaySeconds: 10
+                - postgres
+            initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5  
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+      volumes:
+        - name: postgres-secrets
+          secret:
+            secretName: postgres-adopt-secret # K8s secret objemizi pod'a volume olarak baplıyoruz
+            items:  
+              - key: postgres_password # secret objemizde birden fazla key vardıı o yüzden sadece gerekli olan postgres password'ü aldık.
+                path: postgres_password # mount içinde oluşturalacak dosyanın adı.
+  
+  volumeClaimTemplates: # her pod için postgres-data adında persistent volume claim oluşturuyorum.
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+        
+      
+
+
 
