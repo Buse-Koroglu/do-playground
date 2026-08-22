@@ -4,3 +4,4 @@ dist/
 backend/uploads/*
 !backend/uploads/.gitkeep
 secrets/
+k8s/base/02-secret.yaml
