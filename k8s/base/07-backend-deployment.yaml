@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: pet-adopt-backend:latest
+          image: pet-adopt-backend:local
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
@@ -53,14 +53,14 @@ spec:
                   name: pet-adopt-config
                   key: CORS_ORIGIN
             - name: DB_PASSWORD_FILE
-              value: /run/secrets/postgres_password
+              value: /etc/app-secrets/postgres_password
             - name: JWT_SECRET_FILE
-              value: /run/secrets/jwt_secret    
+              value: /etc/app-secrets/jwt_secret    
           volumeMounts:
             - name: uploads
               mountPath: /app/uploads
             - name: backend-secrets
-              mountPath: /run/secrets
+              mountPath: /etc/app-secrets
               readOnly: true
           readinessProbe:
             httpGet:
@@ -91,7 +91,7 @@ spec:
             claimName: backend-uploads-pvc
         - name: backend-secrets
           secret:
-            secretName: pet-adopt-secrets
+            secretName: pet-adopt-secret
             items:
               - key: postgres_password
                 path: postgres_password
