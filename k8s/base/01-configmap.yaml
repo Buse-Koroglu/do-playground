@@ -10,7 +10,7 @@ spec:
     POSTGRES_DB: "petdb"
     
     # backend
-    DB_HOST: "postgres" # backend statefulset service'nin adı
+    DB_HOST: "postgres" # backend statefulset service'nin adı (Database URL içerisinde DB_HOST veritabanı stateful setine erişimimizi sağlayacak servise yönlendireceğiz trafiği ilk olarak.)
     DB_PORT: "5432" # postgres'in container içinde dinlediği port
     DB_USER: "petadmin"
     DB_NAME: "petdb"
