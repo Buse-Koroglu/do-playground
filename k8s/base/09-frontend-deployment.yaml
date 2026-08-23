@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: pet-adopt-frontend:latest
+          image: pet-adopt-frontend:local
           imagePullPolicy: IfNotPresent
           ports: 
            - containerPort: 8080

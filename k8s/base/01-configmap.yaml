@@ -3,19 +3,18 @@ kind: ConfigMap
 metadata:
   name: pet-adopt-config
   namespace: pet-adopt-dev
-spec:
-  data:
+data:
     # db 
-    POTGRES_USER: "petadmin"
+    POSTGRES_USER: "petadmin"
     POSTGRES_DB: "petdb"
     
     # backend
-    DB_HOST: "postgres" # backend statefulset service'nin adı (Database URL içerisinde DB_HOST veritabanı stateful setine erişimimizi sağlayacak servise yönlendireceğiz trafiği ilk olarak.)
+    DB_HOST: postgres-service # postgres service'nin adı (Database URL içerisinde DB_HOST veritabanı stateful setine erişimimizi sağlayacak servise yönlendireceğiz trafiği ilk olarak.)
     DB_PORT: "5432" # postgres'in container içinde dinlediği port
     DB_USER: "petadmin"
     DB_NAME: "petdb"
     PORT: "5000"
 
-    CORS_ORIGIN: "http://pet-adopt.local"
+    CORS_ORIGIN: "http://pet-adopt.local:8080"
 
-    VITE_API_URL: "http://pet-adopt.local/api"
+    VITE_API_URL: "/api"

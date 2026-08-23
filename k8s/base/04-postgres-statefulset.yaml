@@ -26,27 +26,29 @@ spec:
             - name: POSTGRES_USER # user değişkenini configmap'ten alıyorum.
               valueFrom:
                 configMapKeyRef:
-                  name: postgres-adopt-config
+                  name: pet-adopt-config
                   key: POSTGRES_USER
             - name: POSTGRES_DB # db değişkenini configmap'ten alıyorum.
               valueFrom:
                 configMapKeyRef:
-                  name: postgres-adopt-config
+                  name: pet-adopt-config
                   key: POSTGRES_DB
             - name: POSTGRES_PASSWORD_FILE # password değişkenini secret'tan alıyorum.
-              value : /run/secrets/postgres_password # secret mount path'i ile aynı olmalı.
+              value : /etc/app-secrets/postgres_password # secret mount path'i ile aynı olmalı.
           volumeMounts: # postgres container'ının volume mountlarını tanımlıyorum.
             - name: postgres-data 
               mountPath: /var/lib/postgresql/data # postgres container'ının data klasörünü persistent volume claim ile mount ediyorum.
             - name: postgres-secrets
-              mountPath: /run/secrets # secret mount path'i ile aynı olmalı.
+              mountPath: /etc/app-secrets # secret mount path'i ile aynı olmalı.
               readOnly: true
           readinessProbe:
             exec:
               command:
                 - pg_isready
                 - -U
-                - postgres
+                - petadmin
+                - -d
+                - petdb
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5
@@ -56,7 +58,9 @@ spec:
               command:
                 - pg_isready
                 - -U
-                - postgres
+                - petadmin
+                - -d 
+                - petdb
             initialDelaySeconds: 15
             periodSeconds: 20
             timeoutSeconds: 5
@@ -71,7 +75,7 @@ spec:
       volumes:
         - name: postgres-secrets
           secret:
-            secretName: postgres-adopt-secret # K8s secret objemizi pod'a volume olarak baplıyoruz
+            secretName: pet-adopt-secret # K8s secret objemizi pod'a volume olarak baplıyoruz
             items:  
               - key: postgres_password # secret objemizde birden fazla key vardıı o yüzden sadece gerekli olan postgres password'ü aldık.
                 path: postgres_password # mount içinde oluşturalacak dosyanın adı.
