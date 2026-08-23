@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-uploads-pvc
+  namespace: pet-adopt-dev
+  labels:
+    app: backend
+spec:
+  accessModes:
+    - ReadWriteOnce # pvc'yi sadece 1 pod mount edebilir. backend şuanlık sadece 1 replika zaten
+  resources:
+    requests:
+      storage: 512Mi # pvc'nin request ettiği storage miktarı.

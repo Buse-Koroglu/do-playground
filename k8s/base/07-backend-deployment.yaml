@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: pet-adopt-dev
+  labels:
+    app: backend
+spec:
+  replicas: 1 # 1 tane backend podu çalıştırılacak
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: pet-adopt-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: pet-adopt-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: pet-adopt-config
+                  key: DB_PORT
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: pet-adopt-config
+                  key: DB_USER
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: pet-adopt-config
+                  key: DB_NAME    
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: pet-adopt-config
+                  key: PORT
+            - name: CORS_ORIGIN
+              valueFrom:
+                configMapKeyRef:
+                  name: pet-adopt-config
+                  key: CORS_ORIGIN
+            - name: DB_PASSWORD_FILE
+              value: /run/secrets/postgres_password
+            - name: JWT_SECRET_FILE
+              value: /run/secrets/jwt_secret    
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+            - name: backend-secrets
+              mountPath: /run/secrets
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"  
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: backend-uploads-pvc
+        - name: backend-secrets
+          secret:
+            secretName: pet-adopt-secrets
+            items:
+              - key: postgres_password
+                path: postgres_password
+              - key: jwt_secret
+                path: jwt_secret
